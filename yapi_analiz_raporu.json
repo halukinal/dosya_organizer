@@ -1,0 +1,274 @@
+{
+    "klasor_yapisi": {
+        "root": "/Volumes/KIOXIA/YENI_KATALOG",
+        "tree": {
+            "30X90": {
+                "Mat": {
+                    "ornek_urunler": [
+                        {
+                            "ad": "Nice Gray Mat 30X90",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Essential Light Gray Mat 30X90",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Nice Dark Gray Mat 30X90",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        }
+                    ],
+                    "toplam_urun_sayisi": 23
+                },
+                "Full Lappato": {
+                    "ornek_urunler": [
+                        {
+                            "ad": "Mistero Mix Flp 30X90",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Essential Dark Gray Flp 30X90",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Aleats Gray Flp 30X90",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        }
+                    ],
+                    "toplam_urun_sayisi": 15
+                }
+            },
+            "80X80": {
+                "Mat": {
+                    "ornek_urunler": [
+                        {
+                            "ad": "Misha Bej Mat 80X80",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Misha Gray Mat 80X80",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Misha Dark Gray Mat 80X80",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        }
+                    ],
+                    "toplam_urun_sayisi": 12
+                },
+                "Full Lappato": {
+                    "ornek_urunler": [
+                        {
+                            "ad": "Blue Moon Flp 80X80",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Calacatta Grigio Flp 80X80",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Wedding Flp 80X80",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        }
+                    ],
+                    "toplam_urun_sayisi": 5
+                }
+            },
+            "60X120": {
+                "Mat": {
+                    "ornek_urunler": [
+                        {
+                            "ad": "Ocean Blue Mat 60X120",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Olvido Gray Mat 60X120",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        },
+                        {
+                            "ad": "Essential Gray Mat 60X120",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        }
+                    ],
+                    "toplam_urun_sayisi": 88
+                },
+                "Parlak": {
+                    "ornek_urunler": [
+                        {
+                            "ad": "Aleats Antrasit Sgr 60X120",
+                            "icerik_ornekleri": [
+                                ".jpg"
+                            ]
+                        }
+                    ],
+                    "toplam_urun_sayisi": 1
+                }
+            }
+        }
+    },
+    "excel_yapilari": {
+        "tk Katalog Çalışması 09.10.25.xlsx": {
+            "ham_ilk_5_satir": [
+                [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    null,
+                    "No",
+                    "Stok Kodu",
+                    "Stok Adi",
+                    "Ürün",
+                    "Yüzey Karakteri",
+                    "Ebat",
+                    "Category",
+                    "Üretim Şekli",
+                    "Açıklama"
+                ],
+                [
+                    null,
+                    1,
+                    "SRSPABCO60X120MAT219",
+                    "ABACO 60X120 MAT BAMBU",
+                    "Abaco Bambu",
+                    "Mat",
+                    "60x120",
+                    "WOOD",
+                    "Sırlı Porselen",
+                    "Ürün Gamı"
+                ],
+                [
+                    null,
+                    2,
+                    "SRSPABCO20X120MAT219",
+                    "ABACO 20X120 MAT BAMBU",
+                    "Abaco Bambu",
+                    "Mat",
+                    "20X120",
+                    "WOOD",
+                    "Sırlı Porselen",
+                    "Ürün Gamı"
+                ]
+            ]
+        },
+        "25.06.03 Ürün Listesi.xlsx": {
+            "ham_ilk_5_satir": [
+                [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    null,
+                    null,
+                    "No",
+                    "Ürün Adı -2",
+                    "Ebat",
+                    "Yüzey Karakteri",
+                    "Seri",
+                    "Renk",
+                    "Ürün Cinsi",
+                    "Açıklama",
+                    "Üretim Şekli"
+                ],
+                [
+                    null,
+                    null,
+                    1,
+                    "Abaco Bambu",
+                    "20X120",
+                    "Mat",
+                    "Abaco",
+                    "Bambu",
+                    "WOOD",
+                    "Ürün Gamı",
+                    "Sırlı Porselen"
+                ],
+                [
+                    null,
+                    null,
+                    2,
+                    "Abaco Bambu",
+                    "60X120",
+                    "Mat",
+                    "Abaco",
+                    "Bambu",
+                    "WOOD",
+                    "Ürün Gamı",
+                    "Sırlı Porselen"
+                ],
+                [
+                    null,
+                    null,
+                    3,
+                    "Agate SAS",
+                    "60X120",
+                    "Soft Antıslıp",
+                    "Agate",
+                    "-",
+                    "N.STONE/STONE",
+                    "Ürün Gamı",
+                    "Sırlı Porselen"
+                ]
+            ]
+        }
+    }
+}
