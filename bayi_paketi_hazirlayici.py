@@ -10,12 +10,12 @@ from tqdm import tqdm
 # =============================================================================
 
 # Girdiler
-ENVANTER_DOSYASI = Path("/Volumes/KIOXIA/Güral Seramik/Katalog/Guncel_Disk_Envanteri.xlsx")  # Bizim oluşturduğumuz envanter
+ENVANTER_DOSYASI = Path("/Users/halukinal/dosya_organizer/Guncel_Disk_Envanteri.xlsx")  # Bizim oluşturduğumuz envanter
 URUN_GAMI_DOSYASI = Path("/Volumes/KIOXIA/Güral Seramik/Katalog/25.11.27 Ürün Gamı.xlsx")   # Müşteriden gelen talep listesi
 
 # Çıktılar
-HEDEF_KLASOR = Path("/Volumes/KIOXIA/Güral Seramik/Katalog/Bayi_Paketi_2025") # Bayilere gidecek klasör
-RAPOR_DOSYASI = "/Volumes/KIOXIA/Güral Seramik/Katalog/Bayi_Paketi_Raporu.xlsx"
+HEDEF_KLASOR = Path("/Volumes/KIOXIA/Güral Seramik/Katalog/Bayi_Paketi_2025_v2") # Bayilere gidecek klasör
+RAPOR_DOSYASI = "/Volumes/KIOXIA/Güral Seramik/Katalog/Bayi_Paketi_Raporu_v2.xlsx"
 
 # Güvenlik Modu (True = Kopyalamaz, sadece raporlar)
 DRY_RUN = False 
