@@ -1,0 +1,25 @@
+{
+    "paths": {
+        "source_folder": "/Volumes/KIOXIA/Yeni_Ürün_v2",
+        "destination_folder": "/Volumes/KIOXIA/Optimize_Edilmis_Urunler_V7",
+        "inventory_excel": "Guncel_Disk_Envanteri.xlsx",
+        "product_list_excel": "25.11.27 Ürün Gamı.xlsx"
+    },
+    "excel_columns": {
+        "product_name": "Ürün",
+        "size": "Ebat",
+        "surface": "Yüzey Karakteri",
+        "inventory_key": "KEY",
+        "inventory_path": "Yol"
+    },
+    "optimization": {
+        "max_size_mb": 4.0,
+        "max_short_edge_px": 1000,
+        "min_quality": 60,
+        "start_quality": 95
+    },
+    "app": {
+        "title": "Medya Asistanı Pro v5.0",
+        "theme": "clam"
+    }
+}

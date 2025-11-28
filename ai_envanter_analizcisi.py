@@ -42,7 +42,7 @@ class AIEnvanterAnalizcisi:
         
         genai.configure(api_key=self.api_key)
         # Hızlı ve ekonomik model: Flash
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
 
     def generate_summary(self, row):
         """
@@ -56,9 +56,7 @@ class AIEnvanterAnalizcisi:
             
             prompt = (
                 f"Ürün: {urun}, Ebat: {ebat}, Yüzey: {yuzey}, Görsel Sayısı: {sayi}. "
-                "Bu ürün bilgilerini kullanarak, bir katalogda kullanılabilecek, "
-                "ilgi çekici ve öz ama profesyonel, tek cümlelik kısa bir Türkçe tanıtım/özet yazısı yaz. "
-                "Örneğin: '60x120 ebatlarında, mat yüzeyli şık Abaco Bambu serisi, 12 görsel ile stoklarda.'"
+                "Bu ürün bilgilerini kullanarak, verileri kısaca analizini yap. "
             )
             
             # API çağrısı (Hız sınırı hatası almamak için kısa bekleme eklenebilir)
