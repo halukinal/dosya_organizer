@@ -9,56 +9,31 @@ from PIL import Image, ImageFile
 # ⚙️ AYARLAR VE KONFİGÜRASYON
 # =============================================================================
 
-# Analiz edilecek Excel dosyası (GÜNCELLENDİ)
-# Artık en son oluşturulan güncel envanter raporunu baz alıyor
+# Okunacak Envanter Dosyası
 ANALIZ_DOSYASI = "Guncel_Disk_Envanteri.xlsx"
 
-# İşlenmiş dosyaların kopyalanacağı yeni ana klasör
-HEDEF_ANA_KLASOR = Path("/Volumes/KIOXIA/Yeni_Ürün_v4")
+# Yeni dosyaların oluşturulacağı hedef klasör
+HEDEF_ANA_KLASOR = Path("/Volumes/KIOXIA/Optimize_Edilmis_Urunler_V7")
 
 # GÜVENLİK MODU 
-# True  -> Sadece simülasyon yapar, dosya kopyalamaz.
+# True  -> Sadece simülasyon yapar, dosya kopyalamaz/oluşturmaz.
 # False -> Gerçek işlem yapar.
 DRY_RUN = False 
 
-# 📉 GÖRSEL SIKIŞTIRMA VE OPTİMİZASYON AYARLARI
-HEDEF_MAX_BOYUT_MB = 3.0      # Heddeflenen maksimum dosya boyutu
-STANDART_KISA_KENAR = 1000    # Kural: Kısa kenar EN FAZLA bu kadar olabilir
-MIN_KALITE = 60               # Kalite düşürme alt sınırı (%)
-BASLANGIC_KALITE = 95         # İlk deneme kalitesi (%)
-KALITE_AZALTMA_ADIMI = 5      # Her denemede kalite ne kadar düşsün?
+# 📉 OPTİMİZASYON AYARLARI
+HEDEF_MAX_BOYUT_MB = 4.0      # Hedef: Dosya boyutu 4MB altı olsun
+STANDART_KISA_KENAR = 1000    # Hedef: Kısa kenar maksimum 1000px olsun
+MIN_KALITE = 60               # Kalite en fazla %60'a düşsün
+BASLANGIC_KALITE = 95         # Başlangıç kalitesi
+KALITE_AZALTMA_ADIMI = 5      # Döngüde kalite düşürme adımı
 
-# 🔧 PIL KÜTÜPHANESİ İNCE AYARLARI
-Image.MAX_IMAGE_PIXELS = None       # Devasa pikselli görsellerde hata vermesin (DecompressionBombError önlemi)
-ImageFile.LOAD_TRUNCATED_IMAGES = True  # Yarım kalmış/bozuk görselleri okumaya çalışsın
+# 🔧 PIL AYARLARI
+Image.MAX_IMAGE_PIXELS = None       
+ImageFile.LOAD_TRUNCATED_IMAGES = True 
 
 class StokOptimizeEdici:
     def __init__(self, excel_path):
         self.excel_path = Path(excel_path)
-        
-    def smart_parse_key(self, key_str):
-        """
-        KEY yapısını (URUNADI_EBAT_YUZEY) parçalar.
-        Geriye (UrunAdi, Ebat, Yuzey) döner.
-        """
-        if not isinstance(key_str, str): return None, None, None
-        
-        # Sondan 2 alt çizgiye göre böl (Yüzey ve Ebat sondadır)
-        parts = key_str.rsplit('_', 2) 
-        
-        if len(parts) == 3:
-            urun_adi, ebat, yuzey = parts[0], parts[1], parts[2]
-            return urun_adi, ebat, yuzey
-        return None, None, None
-
-    def normalize_product_name(self, name):
-        """
-        Ürün adındaki kelime sırası hatalarını giderir.
-        Örn: 'BAMBU ABACO' -> 'ABACO BAMBU'
-        """
-        if not name: return "BILINMEYEN_URUN"
-        words = name.split()
-        return " ".join(sorted(words))
 
     def get_file_size_mb(self, path):
         """Dosya boyutunu MB cinsinden hesaplar."""
@@ -66,62 +41,79 @@ class StokOptimizeEdici:
 
     def optimize_image(self, source_path, target_path):
         """
-        Görseli okur, CMYK ise RGB'ye çevirir.
-        Kısa kenarı 1000px'den büyükse 1000px'e küçültür.
-        Dosya boyutu 4MB altına inene kadar sıkıştırır.
+        Görseli okur, RENK FORMATINA DOKUNMADAN (CMYK/RGB korunur),
+        ICC Renk Profilini KORUR (Renk kaymasını önler),
+        kısa kenarı 1000px'e indirir ve 4MB altına sıkıştırır.
         """
         try:
             file_size_mb = self.get_file_size_mb(source_path)
             
             with Image.open(source_path) as img:
+                # --- ADIM 0: ICC Profilini Yakala (Renk Doğruluğu İçin) ---
+                icc_profile = img.info.get('icc_profile')
+                
+                # Orijinal boyutları al
                 width, height = img.size
                 kisa_kenar = min(width, height)
                 
-                # --- ADIM 1: Renk Formatı Dönüşümü (CMYK -> RGB) ---
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
-
-                # --- ADIM 2: Karar Mekanizması ---
+                # --- ADIM 1: Renk Dönüşümü İPTAL ---
+                # Kullanıcı isteği üzerine CMYK -> RGB dönüşümü kaldırıldı.
                 
-                # KURAL: Kısa kenar 1000px'den büyükse MUTLAKA küçültülecek.
+                # --- ADIM 2: Karar Mekanizması ---
+                # Eğer kısa kenar 1000px altındaysa VE dosya boyutu 4MB altındaysa
+                # hiç dokunma, direkt kopyala (Kalite kaybı 0 olsun)
                 resize_needed = kisa_kenar > STANDART_KISA_KENAR
                 
-                # Eğer boyutlandırma gerekmiyorsa ve dosya boyutu zaten küçükse -> Direkt Kopyala
                 if not resize_needed and file_size_mb < HEDEF_MAX_BOYUT_MB:
                     shutil.copy2(source_path, target_path)
                     return True
 
-                # --- ADIM 3: İşleme Başla ---
-
-                # A) Yeniden Boyutlandırma (Resize)
-                # Sadece kısa kenar 1000px üzerindeyse çalışır
+                # --- ADIM 3: İşleme ---
+                
+                # A) Resize (Sadece gerekliyse)
                 if resize_needed:
                     ratio = STANDART_KISA_KENAR / kisa_kenar
                     new_width = int(width * ratio)
                     new_height = int(height * ratio)
-                    
-                    # LANCZOS filtresi, küçültme işleminde en iyi kaliteyi verir
+                    # LANCZOS: En iyi küçültme filtresi
                     img = img.resize((new_width, new_height), Image.LANCZOS)
                 
-                # B) Döngüsel Sıkıştırma (Iterative Compression)
-                # Dosya boyutu 4MB altına inene kadar kaliteyi adım adım düşür
+                # B) Sıkıştırma Döngüsü
                 current_quality = BASLANGIC_KALITE
+                saved_successfully = False
+
                 while current_quality >= MIN_KALITE:
-                    img.save(target_path, "JPEG", quality=current_quality, optimize=True)
-                    
-                    # Kontrol et: İstenen boyuta indi mi?
-                    if self.get_file_size_mb(target_path) < HEDEF_MAX_BOYUT_MB:
-                        return True
-                    
-                    # İnmediyse kaliteyi biraz daha düşür ve tekrar dene
-                    current_quality -= KALITE_AZALTMA_ADIMI
-                
-                # Eğer %60 kaliteye rağmen hala 4MB üstündeyse (çok nadir), son hali kalsın.
+                    try:
+                        # Formatı koruyarak kaydet.
+                        # ÖNEMLİ: icc_profile parametresi ile renk haritasını geri yüklüyoruz.
+                        save_kwargs = {
+                            "quality": current_quality,
+                            "optimize": True
+                        }
+                        
+                        if icc_profile:
+                            save_kwargs["icc_profile"] = icc_profile
+
+                        img.save(target_path, "JPEG", **save_kwargs)
+                        
+                        # Boyut kontrolü
+                        if self.get_file_size_mb(target_path) < HEDEF_MAX_BOYUT_MB:
+                            saved_successfully = True
+                            break # Hedefe ulaşıldı
+                        
+                        current_quality -= KALITE_AZALTMA_ADIMI
+                    except OSError:
+                        # CMYK JPEG yazma hatası vb. olursa
+                        raise Exception("Format Yazma Hatası")
+
+                # Eğer kalite düşmesine rağmen kaydedilemediyse (çok nadir)
+                if not saved_successfully:
+                     shutil.copy2(source_path, target_path)
+
                 return True
 
         except Exception as e:
-            # Kritik Hata Yönetimi: Pillow işleyemezse orijinali kopyala
-            print(f"⚠️ Görsel işlenemedi, orijinal kopyalanıyor ({source_path.name}): {e}")
+            # Herhangi bir hata durumunda orijinali kopyala
             try:
                 shutil.copy2(source_path, target_path)
                 return True
@@ -129,116 +121,79 @@ class StokOptimizeEdici:
                 return False
 
     def baslat(self):
-        print(f"📊 Analiz dosyası yükleniyor: {self.excel_path.name}")
+        print(f"📊 Envanter dosyası okunuyor: {self.excel_path.name}")
         try:
-            # Guncel_Disk_Envanteri.xlsx dosyasını oku (Sayfa adı genelde Sheet1 olur veya ilk sayfa okunur)
             df = pd.read_excel(self.excel_path)
         except Exception as e:
-            print(f"❌ Hata: Excel dosyası okunamadı. Lütfen dosya yolunu kontrol et.\nDetay: {e}")
+            print(f"❌ Hata: Excel dosyası okunamadı. {e}")
             return
 
-        # --- AŞAMA 1: GRUPLAMA VE SEÇME ---
-        print("🧠 Envanter analiz ediliyor ve en iyi kaynaklar seçiliyor...")
-        
-        # Hedef klasör başına en iyi kaynak görseli tutacak sözlük
-        transfer_listesi = {} 
-        
-        # tqdm ile ilerleme çubuğu göstererek analizi yap
-        for _, row in tqdm(df.iterrows(), total=len(df), desc="Analiz"):
-            key = row['KEY']
-            kaynak_yol = Path(row['Yol'])
-            
-            # Kaynak klasör diskte gerçekten var mı?
-            if not kaynak_yol.exists(): continue
-            
-            # Anahtarı parçala
-            ham_isim, ebat, yuzey = self.smart_parse_key(key)
-            if not ham_isim: continue
-            
-            # İsimdeki kelime sırasını düzelt (Arama kolaylığı için)
-            temiz_isim = self.normalize_product_name(ham_isim)
-            
-            # Benzersiz Klasör İmzası (Tuple)
-            hedef_klasor_imzasi = (ebat, temiz_isim, yuzey)
-            
-            # Klasör içindeki JPG sayısını kontrol et
-            try:
-                # Guncel_Disk_Envanteri dosyasında 'Gorsel_Sayisi' sütunu varsa direkt kullan
-                if 'Gorsel_Sayisi' in row:
-                    jpg_sayisi = int(row['Gorsel_Sayisi'])
-                else:
-                    jpg_sayisi = len([f for f in kaynak_yol.glob('*') if f.suffix.lower() in ['.jpg', '.jpeg']])
-            except:
-                jpg_sayisi = 0
-            
-            if jpg_sayisi == 0: continue # Boş klasörleri atla
+        # Gerekli sütunları kontrol et
+        required_cols = ['Yol', 'Ebat', 'Orijinal_Ad', 'Yuzey']
+        if not all(col in df.columns for col in required_cols):
+            print(f"❌ Hata: Excel dosyasında şu sütunlar eksik: {required_cols}")
+            print("Lütfen 'Guncel_Disk_Envanteri.xlsx' dosyasını kullandığınızdan emin olun.")
+            return
 
-            # MANTIK: Aynı ürün için birden fazla klasör varsa, EN ÇOK görseli olanı seç.
-            if hedef_klasor_imzasi in transfer_listesi:
-                if jpg_sayisi > transfer_listesi[hedef_klasor_imzasi]['count']:
-                    transfer_listesi[hedef_klasor_imzasi] = {'path': kaynak_yol, 'count': jpg_sayisi}
-            else:
-                transfer_listesi[hedef_klasor_imzasi] = {'path': kaynak_yol, 'count': jpg_sayisi}
-
-        # --- AŞAMA 2: İŞLEME, OPTİMİZASYON VE KOPYALAMA ---
-        print(f"\n🚀 {len(transfer_listesi)} adet benzersiz ürün işlenecek.")
-        print(f"🎯 Hedef Standartlar: Max {HEDEF_MAX_BOYUT_MB}MB | Kısa Kenar: Max {STANDART_KISA_KENAR}px")
+        print(f"\n🚀 Toplam {len(df)} klasör satırı işlenecek.")
+        print(f"🎯 Hedef: Kısa Kenar Max {STANDART_KISA_KENAR}px | Boyut Max {HEDEF_MAX_BOYUT_MB}MB")
+        print(f"🎨 Renk Profili: KORUNACAK (ICC Profile Copy)")
         print(f"📂 Çıktı Dizini: {HEDEF_ANA_KLASOR}")
         
         if DRY_RUN:
-            print("\n⚠️  [GÜVENLİ MOD] DRY RUN AKTİF: Dosyalar kopyalanmayacak, sadece simülasyon yapılıyor.\n")
+            print("\n⚠️  [SİMÜLASYON MODU] Dosyalar kopyalanmayacak/oluşturulmayacak.")
+            print("    Gerçek işlem için kodun başındaki 'DRY_RUN = False' yapın.\n")
         else:
-            # Hedef klasörü oluştur
             if not HEDEF_ANA_KLASOR.exists():
                 HEDEF_ANA_KLASOR.mkdir(parents=True)
 
         basarili_sayisi = 0
         hatali_sayisi = 0
         
-        for (ebat, urun, yuzey), veri in tqdm(transfer_listesi.items(), desc="Optimizasyon"):
-            kaynak = veri['path']
-            # Yeni Hiyerarşik Yapı: Ebat / Ürün Adı / Yüzey
-            hedef_dizin = HEDEF_ANA_KLASOR / ebat / urun / yuzey
+        # Excel'deki her satırı gez
+        for _, row in tqdm(df.iterrows(), total=len(df), desc="Optimizasyon"):
+            kaynak_klasor = Path(row['Yol'])
             
-            if DRY_RUN:
-                # Simülasyon modunda işlem yapma, döngüyü devam ettir
+            try:
+                ebat = str(row['Ebat']).strip()
+                urun = str(row['Orijinal_Ad']).strip()
+                yuzey = str(row['Yuzey']).strip()
+                hedef_dizin = HEDEF_ANA_KLASOR / ebat / urun / yuzey
+            except:
+                continue 
+            
+            if not kaynak_klasor.exists():
                 continue
-            else:
-                try:
-                    if not hedef_dizin.exists():
-                        hedef_dizin.mkdir(parents=True)
-                    
-                    # Klasördeki her görseli işle
-                    for dosya in kaynak.iterdir():
-                        if dosya.is_file() and dosya.suffix.lower() in ['.jpg', '.jpeg']:
-                            hedef_dosya = hedef_dizin / dosya.name
-                            
-                            # Optimizasyon fonksiyonunu çağır
-                            self.optimize_image(dosya, hedef_dosya)
-                    
-                    basarili_sayisi += 1
-                except Exception as e:
-                    print(f"❌ Klasör işleme hatası ({urun}): {e}")
-                    hatali_sayisi += 1
 
-        # --- RAPORLAMA ---
+            if DRY_RUN:
+                continue 
+            
+            try:
+                if not hedef_dizin.exists():
+                    hedef_dizin.mkdir(parents=True)
+                
+                for dosya in kaynak_klasor.iterdir():
+                    if dosya.is_file() and dosya.suffix.lower() in ['.jpg', '.jpeg']:
+                        hedef_dosya = hedef_dizin / dosya.name
+                        self.optimize_image(dosya, hedef_dosya)
+                
+                basarili_sayisi += 1
+            except Exception as e:
+                hatali_sayisi += 1
+
         print("\n" + "="*50)
         print("🏁 İŞLEM TAMAMLANDI")
         print("="*50)
-        print(f"✅ Başarıyla Oluşturulan Klasör: {basarili_sayisi}")
-        print(f"❌ Hatalı / Atlanan Klasör    : {hatali_sayisi}")
+        print(f"✅ Başarıyla İşlenen Klasör: {basarili_sayisi}")
         
         if DRY_RUN:
-            print("\n💡 İPUCU: Simülasyon başarılı görünüyorsa, kodun başındaki")
-            print("         'DRY_RUN = True' satırını 'False' yapıp tekrar çalıştırın.")
+            print("\n💡 SİMÜLASYON TAMAMLANDI. Gerçek işlem için 'DRY_RUN = False' yapın.")
 
 if __name__ == "__main__":
-    # Pillow kütüphanesi kontrolü
     try:
         from PIL import Image
     except ImportError:
-        print("⚠️ HATA: 'Pillow' kütüphanesi eksik.")
-        print("Lütfen terminalde şu komutu çalıştırın: pip install Pillow")
+        print("⚠️ HATA: Pillow eksik. 'pip install Pillow' çalıştırın.")
         exit()
         
     app = StokOptimizeEdici(ANALIZ_DOSYASI)
