@@ -6,6 +6,7 @@ from pathlib import Path
 import io
 import webbrowser
 import os
+import A_B_kiyasla
 
 # --- MODÜLLERİ GÜVENLİ İÇE AKTARMA ---
 MODULE_STATUS = {}
@@ -22,9 +23,8 @@ def safe_import(module_name, key):
 disk_envanter_guncelleyici = safe_import('disk_envanter_guncelleyici', 'envanter')
 main_optimizer = safe_import('main_optimizer', 'optimizer')
 bayi_paketi_hazirlayici = safe_import('bayi_paketi_hazirlayici', 'bayi')
-# Burada dosya adınız 'ai_envanter_analizcisi.py' olduğu varsayılmıştır.
-# Eğer dosya adını değiştirdiyseniz burayı güncelleyin.
 ai_envanter_analizcisi = safe_import('ai_envanter_analizcisi', 'ai') 
+kiyasla = safe_import('A_B_kiyasla', 'kiyasla')
 
 class TextRedirector(io.StringIO):
     """Konsol çıktılarını arayüze yönlendirir."""
@@ -77,6 +77,16 @@ class MedyaYonetimApp:
         ttk.Label(header, text="MEDYA ENVANTER & STOK YÖNETİMİ", style="Header.TLabel").pack(side=tk.LEFT)
         ttk.Label(header, text="v4.1 Final", font=("Segoe UI", 10, "italic")).pack(side=tk.RIGHT, anchor="s")
 
+        # --- Eksik Ürün Analiz Butonu ---
+        self.btn_kiyasla = tk.Button(
+            self.main_frame, 
+            text="Eksik Ürünleri Analiz Et (A/B)", 
+            bg="#FF9800", fg="white", # Turuncu renk, dikkat çeksin
+            font=("Arial", 11, "bold"),
+            command=self.eksik_urun_analizi_yap
+        )
+        self.btn_kiyasla.pack(pady=10, fill="x") # Mevcut layout'una göre grid veya pack kullan
+        
         # SEKMELER
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(expand=True, fill=tk.BOTH, padx=20, pady=5)
@@ -264,6 +274,37 @@ class MedyaYonetimApp:
             except Exception as e: print(f"HATA: {e}")
         threading.Thread(target=task, daemon=True).start()
 
+
+    # --- SEKME 3: BAYİ ---
+    def setup_bayi_tab(self):
+        frame = ttk.Frame(self.tab_bayi, padding=20)
+        frame.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(frame, text="Bu özellik müşteri talep listesine göre bayiye özel klasör hazırlar.").pack(anchor="w")
+        
+        # Envanter Dosyası
+        f1 = ttk.Frame(frame); f1.pack(fill=tk.X, pady=5)
+        ttk.Label(f1, text="Güncel Envanter:").pack(side=tk.LEFT)
+        self.path_bayi_env = tk.StringVar(value="Guncel_Disk_Envanteri.xlsx")
+        ttk.Entry(f1, textvariable=self.path_bayi_env).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+        ttk.Button(f1, text="Seç", command=lambda: self.select_file(self.path_bayi_env)).pack(side=tk.RIGHT)
+
+        # Talep Dosyası
+        f2 = ttk.Frame(frame); f2.pack(fill=tk.X, pady=5)
+        ttk.Label(f2, text="Ürün Gamı Listesi:").pack(side=tk.LEFT)
+        self.path_bayi_talep = tk.StringVar(value="25.11.27 Ürün Gamı.xlsx")
+        ttk.Entry(f2, textvariable=self.path_bayi_talep).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+        ttk.Button(f2, text="Seç", command=lambda: self.select_file(self.path_bayi_talep)).pack(side=tk.RIGHT)
+        
+        # --- YENİ EKLENEN BUTON ---
+        # self.main_frame yerine 'frame' kullanıyoruz.
+        ttk.Button(
+            frame, 
+            text="🔍 EKSİK ÜRÜN ANALİZİ (A/B Kıyasla)", 
+            command=self.eksik_urun_analizi_yap
+        ).pack(pady=(20, 5)) # Biraz boşluk bırak
+        
+        ttk.Button(frame, text="▶ PAKETİ HAZIRLA", command=self.run_bayi).pack(pady=5)
+
     # YARDIMCILAR
     def select_folder(self, var):
         d = filedialog.askdirectory()
@@ -272,6 +313,23 @@ class MedyaYonetimApp:
     def select_file(self, var):
         f = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx;*.xls")])
         if f: var.set(f)
+
+    def eksik_urun_analizi_yap(self):
+            # Dosya yollarını Bayi sekmesindeki giriş kutularından alıyoruz
+            dosya_a = self.path_bayi_talep.get() # Ürün Gamı
+            dosya_b = self.path_bayi_env.get()   # Disk Envanteri
+            
+            self.log_ekle(f"Analiz Başlatılıyor...\nA: {dosya_a}\nB: {dosya_b}")
+            
+            # İşlemi çalıştır
+            try:
+                sonuc_mesaji = A_B_Kiyasla.karsilastirma_baslat(dosya_a, dosya_b)
+                self.log_ekle(sonuc_mesaji)
+                messagebox.showinfo("Analiz Sonucu", sonuc_mesaji)
+            except Exception as e:
+                err = f"Analiz Hatası: {str(e)}"
+                self.log_ekle(err)
+                messagebox.showerror("Hata", err)
 
 if __name__ == "__main__":
     root = tk.Tk()
