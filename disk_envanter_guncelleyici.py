@@ -7,8 +7,9 @@ from tqdm import tqdm
 # ⚙️ AYARLAR
 # =============================================================================
 
-# Taranacak Hedef Klasör (Önceki işlemde oluşturduğumuz yeni klasör yolu)
-HEDEF_KLASOR = Path("/Volumes/KIOXIA/Yeni_Ürün_v3")
+# Taranacak Hedef Klasör 
+# (Bunu arayüzden gönderdiğinizde otomatik güncellenir, burası varsayılandır)
+HEDEF_KLASOR = Path("/Volumes/KIOXIA/Yeni_Ürün_v2")
 
 # Çıktı Excel Dosyasının Adı
 RAPOR_ADI = "Guncel_Disk_Envanteri.xlsx"
@@ -27,7 +28,6 @@ class EnvanterTarayici:
         Beklenen Yapı: .../EBAT/URUN_ADI/YUZEY
         """
         try:
-            # Yol parçalarını al (sondan başa doğru: Yüzey, Ürün, Ebat)
             parts = path_obj.parts
             
             # En az 3 seviye derinlikte olmalı (Ebat/Ürün/Yüzey)
@@ -45,13 +45,28 @@ class EnvanterTarayici:
     def create_key(self, urun, ebat, yuzey):
         """Benzersiz Anahtar (KEY) oluşturur: URUN_EBAT_YUZEY"""
         try:
-            # Boşlukları sil, büyük harf yap, Türkçe karakterleri düzelt
             u = str(urun).upper().replace(" ", "")
             e = str(ebat).upper().replace(" ", "")
             y = str(yuzey).upper().replace(" ", "")
             return f"{u}_{e}_{y}"
         except:
             return "UNKNOWN_KEY"
+
+    def calculate_folder_size_mb(self, files_in_folder):
+        """
+        Klasördeki dosyaların toplam boyutunu MB cinsinden hesaplar.
+        """
+        try:
+            total_bytes = 0
+            for f in files_in_folder:
+                # Sadece görsel dosyalarının boyutunu topla
+                if f.suffix.lower() in ['.jpg', '.jpeg']:
+                    total_bytes += f.stat().st_size
+            
+            # Byte -> Megabyte dönüşümü (2 ondalık basamak)
+            return round(total_bytes / (1024 * 1024), 2)
+        except Exception:
+            return 0.0
 
     def tara_ve_raporla(self):
         print(f"📂 Klasör taranıyor: {self.root_path}...")
@@ -62,8 +77,7 @@ class EnvanterTarayici:
 
         envanter_verisi = []
         
-        # os.walk ile tüm alt klasörleri gez
-        # tqdm ile ilerleme çubuğu gösterelim
+        # Tüm klasör ağacını gez
         tum_klasorler = list(os.walk(self.root_path))
         
         print(f"🧠 Toplam {len(tum_klasorler)} alt klasör analiz ediliyor...")
@@ -71,15 +85,17 @@ class EnvanterTarayici:
         for root, dirs, files in tqdm(tum_klasorler, desc="Envanter Çıkarılıyor"):
             path_obj = Path(root)
             
-            # İçinde JPG/JPEG görseli olmayan klasörleri envantere ekleme (Boş klasör kontrolü)
-            gorsel_var_mi = any(f.lower().endswith(('.jpg', '.jpeg')) for f in files)
+            # Pathlib nesnelerine dönüştür (Dosya boyutu okumak için gerekli)
+            path_files = [path_obj / f for f in files]
             
-            if gorsel_var_mi:
+            # İçinde JPG/JPEG görseli var mı?
+            gorsel_dosyalari = [f for f in path_files if f.suffix.lower() in ['.jpg', '.jpeg']]
+            
+            if gorsel_dosyalari:
                 # Yol bilgisinden ürün detaylarını ayrıştır
                 urun_adi, ebat, yuzey = self.smart_parse_path(path_obj)
                 
-                # Eğer yapı beklediğimiz gibi (Ebat/Ürün/Yüzey) değilse,
-                # yine de kaydet ama "Düzensiz" olarak işaretle
+                # Eğer yapı beklediğimiz gibi değilse "Düzensiz" olarak kaydet
                 if not urun_adi: 
                     urun_adi = path_obj.name
                     ebat = "BİLİNMİYOR"
@@ -88,8 +104,9 @@ class EnvanterTarayici:
                 # Key oluştur
                 key = self.create_key(urun_adi, ebat, yuzey)
                 
-                # Dosya sayısı
-                gorsel_sayisi = len([f for f in files if f.lower().endswith(('.jpg', '.jpeg'))])
+                # İstatistikler
+                gorsel_sayisi = len(gorsel_dosyalari)
+                toplam_boyut_mb = self.calculate_folder_size_mb(path_files)
 
                 # Listeye ekle
                 envanter_verisi.append({
@@ -99,6 +116,7 @@ class EnvanterTarayici:
                     "Yuzey": yuzey,
                     "KEY": key,
                     "Gorsel_Sayisi": gorsel_sayisi,
+                    "Toplam_Boyut_MB": toplam_boyut_mb,
                     "Yol": str(path_obj)
                 })
 
@@ -109,10 +127,10 @@ class EnvanterTarayici:
 
         df = pd.DataFrame(envanter_verisi)
         
-        # İstenen Sütun Sıralaması
-        sutun_sirasi = ["Kaynak", "Orijinal_Ad", "Ebat", "Yuzey", "KEY", "Gorsel_Sayisi", "Yol"]
+        # Sütun Sıralaması
+        sutun_sirasi = ["Kaynak", "Orijinal_Ad", "Ebat", "Yuzey", "KEY", "Gorsel_Sayisi", "Toplam_Boyut_MB", "Yol"]
         
-        # Eğer DataFrame'de olmayan bir sütun varsa hata vermesin diye kontrol et
+        # Mevcut sütunları koruyarak sırala
         mevcut_sutunlar = [col for col in sutun_sirasi if col in df.columns]
         df = df[mevcut_sutunlar]
 
